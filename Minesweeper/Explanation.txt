@@ -1,0 +1,173 @@
+• Does your functions “mouseKeyboardCallback” and “mouseMovementCallback” of Input.hs have a relation with this types and function that I found?
+
+Yes. In Input.hs:57, I tell OpenGL that whenever a key is pressed or released, send the key states (k kState kModif mPos) to mouseKeyboardCallback, which will update inputState. Similarly, in Input.hs:62, I tell OpenGL that whenever the mouse moves, to send the new mouse position to mouseMovementCallback, which will update inputState.
+
+So:
+
+1) A key is pressed or released
+2) The key press/release information is sent into k kState kModif mPos
+3) I send k kState kModif mPos to mouseKeyboardCallback along with inputState
+4) mouseKeyboardCallback updates inputState with the information contained in k kState kModif mPos
+
+and
+
+1) The mouse moves
+2) The new mouse position is sent to newMousePos
+3) I send newMousePos to mouseMovementCallback along with inputState
+4) mouseMovementCallback updates inputState with the mouse position contained in newMousePos
+
+
+• How works "fromintegral"? Line 120 - 121.
+
+Position contains the mouse position as GLint. fromIntegral translates from GLint to Int.
+
+
+• Why in the function "placeMines" for "maxMineCount" we have to multiply by 0.75? Line 77.
+
+in Game.hs:83, "maxMineCount = floor $ (fromIntegral boardW) * (fromIntegral boardH) * 0.75" means than maxMineCount is equal to 75% the total number of squares inside the board. Then at Game.hs:94, the "min maxMineCount mineCount" ensures that mineCount cannot be greater than maxMineCount.
+
+
+• I don't know how works the function "placeMines". What is the variable "randGen", "minesX", minesY"?. Line 79.
+
+Since in Haskell, functions are pure, we must send a random number generator (rng) as an argument to functions. randGen is that rng. Whenever we use that rng, it returns two things: 1) the generated number, and 2) a new rng.
+
+At Game.hs:85, the "(mineX, rndGen'') = randomR (0, boardW-1) rndGen'" means that we use the rng rndGen' to generate a number between 0 and boardW-1, and store than number into mineX and that new rng into rndGen''.
+
+
+• Why I have to put "-> game" at the end when I use "case"?. Line 55-69
+
+updateGame has the type InputData -> Game -> Game, which means it takes an InputData and a Game, and returns an updated version of Game. These "-> game" mean that in some cases, we return the game unchanged (We return the argument as it was sent to updateGame).
+
+
+• Did you implemented the function “loadGLTextureFromFile” ? Cause I found on Internet some pages that implemented in the same way. I don’t know if its already implemented on another library or you implemented it.
+
+loadGLTextureFromFile and drawTexture were taken from the internet (although drawTexture was changed a bit as it was originally for 3D)
+
+
+• What does IO TextureObject do in LoadGLTextureFromFile?
+
+It means we have a function with side effect returning a TextureObject. In Haskell, IO() means a function with side effect returning nothing, and IO Something means a function with side effect returning Something.
+
+
+• Could you explain the function LoadGLTexture?
+
+loadGLTextureFromFile f = do t <- either error id <$> readTexture f
+                             textureFilter Texture2D $= ((Linear', Nothing), Linear')
+                             texture2DWrap $= (Mirrored, ClampToEdge)
+                             return t
+1) "readTexture" tries to read the file "f" as a texture.
+2a) If it fails, "error" contains an error message
+2b) If it succeeds, "t" contains a TextureObject
+3) "textureFilter" sets the texture filters to ((Linear', Nothing), Linear') (which are some OpenGL constants)
+4) "texture2DWrap" sets the texture wrap behaviour to (Mirrored, ClampToEdge) (which are, again, some OpenGL constants)
+5) "return t" returns an IO containing "t"
+
+
+• Could you detailed explain this lines from the function “drawTexture”
+
+The >> makes it so what is to the left of it happens before what is to the right of it. Here, it is simply used to make the function more beautifully written. Without it, the function would be written as:
+
+drawTexture :: (GLfloat,GLfloat) -> (GLfloat,GLfloat) -> (GLfloat,GLfloat) -> (GLfloat,GLfloat) -> IO()
+drawTexture (u,v) (uw,vh) (x,y) (w,h) = do
+    renderPrimitive Quads $ do
+        tex (u)      (v - vh) -- Top left coor: (-1, 1)
+        ver (x)      (y - h) -- Top left coor: (-1, 1)
+        tex (u + uw) (v - vh)
+        ver (x + w)  (y - h)
+        tex (u + uw) (v)
+        ver (x + w)  (y)    
+        tex (u) (v)
+        ver (x) (y)    
+        where ver x y = vertex (Vertex2 x y :: Vertex2 GLfloat)
+              tex u v = texCoord (TexCoord2 u v :: TexCoord2 GLfloat)
+              
+which is arguably less beautiful and harder to understand.
+              
+
+• How works the "display function"?. What are the data types IORef and DisplayCallback for? . Line 13-20 of the script Render.
+
+display :: IORef Game -> DisplayCallback
+display gameIORef = do
+  game <- readIORef gameIORef
+  
+  clear [ColorBuffer, DepthBuffer]
+  mapM_ (drawTile game) $ SM.assocs $ board game
+  color $ Color3 1 1 (1 :: GLfloat)
+  flush
+
+IORef allows to modify states. So here, "IORef Game" means that the function "display" can modify the "Game" argument. DisplayCallback is synonym with IO(). What the function does is:
+
+1) read the content of gameIORef and put it into game
+2) We clear the ColorBuffer and the DepthBuffer
+3) For each item in the game's board, we call drawTile
+4) We set the color to 1 1 1
+5) I don't remember what flush does.
+
+
+• Why I need to clear the "ColorBuffer" and "DepthBuffer"? What means these variables? Line 17.
+
+The ColorBuffer contains memory of the colour of every pixel to render, whereas the DepthBuffer contains the z position of every pixel to render. Since Mineseeper is a 2D game, it would not be necessary to clear the DepthBuffer since every pixel has the same z position anyway.
+
+For this Minesweeper game, it would also not be necessary to clear these buffers since every pixels are drawn anew at every frame, but for games that don't redraw every pixels on the screen, not clearing the ColorBuffer would result in something like this: https://media.fromthegrapevine.com/assets/images/2015/5/solitaire-win.jpg.824x0_q71_crop-scale.jpg whereas not clearing the DepthBuffer would result, for 3D graphics, in pixels from things situated in the background being "randomly" drawn in front.
+
+You can look at the first animation here to have an idea of what the DepthBuffer is used for and what kind of bugs not clearing the DepthBuffer would cause in a 3D game: https://open.gl/depthstencils
+
+
+• Why you use "mapM_" and not "mapM"? Line 18.
+
+mapM is useful when something is returned from the function, whereas mapM_ ignores what is returned. Since drawTile returns nothing, mapM_ is appropriate.
+
+These are their types:
+mapM :: Monad m => (a -> m b) -> [a] -> m [b]
+mapM_ :: Monad m => (a -> m b) -> [a] -> m ()
+
+
+• What are "color" and "flush" for? Line 19-20.
+
+color tell OpenGL what colour to use for the next operation. I forgot about flush.
+
+
+• In the drawTile function you have done some math operations that I don't undertand. Why the numbers 2, 0.5 and 1/4?. Line 25-29.
+
+x has a value between 0 and the board's width (16) whereas y has a value between 0 and the boards height (32). The line "x' =  ((fromIntegral x / fromIntegral boardW) - 0.5) * 2" changes these values from the 0 to 16 and 0 to 32 ranges to the -1 and 1 ranges because OpenGL understands coordinates in the -1 to 1 range. The 1/4 are because in images/atlas.png, all images take 1/4 of the whole atlas.
+
+
+• In the function "imageUv" I don't understand how works the dimensions of the images. I mean, the values (1/4, 2/4, 3/4, 0/4). Line 45-49.
+
+Within the atlas in images/atlas.png, all images take 1/4 of the images. So when imageUV returns, for instance, (1/4, -2/4), it means that the part at (1/4, -2/4) within images/atlas.png should be drawn.
+
+
+• For the state "DigitUV n" I don't understand how it take the respective digit of the image to show. Line 50-52.
+
+imageUV (DigitUV n)      = let u = fromIntegral (mod (n-1) 4) / 4
+                               v = -(fromIntegral $ div (n-1) 4)
+                           in (u, v)
+                           
+the x position (u) to use within the atlas is calculated as (mod (n-1) 4) / 4, while the y position (v) is calculated as -(div (n-1) 4)
+               
+               
+• I have two warnings: first in the line 30 to 42, second in the line 45 to 53. The image below shows the warnings.
+
+It gives these warnings because in both drawTile and imageUV, the last pattern match cannot happen (whatever arguments are sent to drawTile and imageUV, this argument will always be caught by any case before the last ones).
+
+
+• What is the difference of → and ← ?
+
+→ is used in method definitions, whereas ← extracts the value inside a IO. For instance, if "refGame" is of type "IO Game" and we do "game ← refGame", we extracted the "Game" of "IO Game" and put it into "game".
+
+
+• Could you explain this part of the code? 
+
+
+The lines under "-- Open configuration" configure some of OpenGL's behaviours. I won't explain these in details but you can read about these online.
+
+The lines under "-- Callbacks" tell what to do when 1) the user does nothing (idleCallback), 2) the user presses a key (keyboardMouseCallback), 3) a postRedisplay has been called (displayCallback), 4) the mouse moved (motionCallback), 5) the window was resized (reshapeCallback), and 6) something else (I forgot what exactly) happens (passiveMitionCallback.
+
+postRedisplay tells the game that it should call whatever has been set to displayCallback (without this first call, I think I had a black screen until something happened).
+
+mainLoop tells OpenGL to enter the OpenGL loop (which gather inputs, call update functions, render on screen, etc...)
+
+
+• I have this error (image below), but the minesweeper runs without problems. I don’t know why this message appears. I am using leksah to run the minesweeper. 
+
+I don't know either.

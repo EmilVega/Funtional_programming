@@ -1,0 +1,16 @@
+name:           CompactAbstractCellComplexes
+version:        0.1
+cabal-version:  >=1.2
+build-type:     Simple
+author:         oracle (Francesc Antón Castro)
+
+executable CompactAbstractCellComplexes
+  hs-source-dirs:  src
+  main-is:         Main.hs
+  build-depends:
+                   base >= 4,
+                   containers,
+                   bytestring
+  ghc-options:     -O2 -rtsopts
+  other-modules:
+                   CACC

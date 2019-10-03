@@ -1,0 +1,28 @@
+For the second question: onKeys and pressedKeys are not used in this game. It's just that I developed Input.hs for a previous game, and used the same Input.hs for this Minesweeper game.
+
+For the first question:
+drawTexture takes 4 arguments:
+
+1) source position (u,v). These are the position of the part, within a source image, that we want to draw.
+2) source size (uw,vh). These are the size of the part, within a source image, that we want to draw.
+3) destination position (x,y). These are the position, on the screen, where we want to draw.
+4) destination size (w,h). These are the size, on the screen, to draw.
+
+The four lines:
+        tex (u)      (v - vh) >> ver (x)     (y - h)
+        tex (u + uw) (v - vh) >> ver (x + w) (y - h)
+        tex (u + uw) (v)      >> ver (x + w) (y)    
+        tex (u)      (v)      >> ver (x)     (y)
+tell OpenGL the source (tex) and destination (ver) of four positions to draw from/to.
+
+so, "tex 0 0 >> ver 1 1" for instance would tell OpenGL to draw the pixel at position 0 0 in the source texture, at the position 1 1 on the screen.
+
+So, these four lines of code specify 4 positions to draw from and draw to (and then OpenGL takes all the pixels inside the square/rectangle/polygon defined by these 4 positions and draws them to).
+
+To give one more example,
+tex (0/8) (0/8) >> ver (7/8) (7/8)
+tex (0/8) (1/8) >> ver (7/8) (8/8)
+tex (1/8) (0/8) >> ver (8/8) (7/8)
+tex (1/8) (1/8) >> ver (8/8) (8/8)
+would draw the square between 0/8, 0/8, 1/8 and 1/8 on a source image, at the square 7/8, 7/8,
+7/8, 7/8, 8/8 and 8/8 on the screen.

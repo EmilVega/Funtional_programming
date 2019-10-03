@@ -1,0 +1,17 @@
+Scritp Game
+
+- How works "fromintegral"? Line 120 - 121.
+- Why in the function "placeMines" for "maxMineCount" we have to multiply by 0.75? Line 77.
+- I don't know how works the function "placeMines". What is the variable "randGen", "minesX", minesY"?. Line 79.
+- Why I have to put "-> game" at the end when I use "case"?. Line 55-69.
+
+Script Render
+
+- How works the "display function"?. What are the data types IORef and DisplayCallback for? . Line 13-20 of the script Render.
+- Why I need to clear the "ColorBuffer" and "DepthBuffer"? What means these variables? Line 17.
+- Why you use "mapM_" and not "mapM"? Line 18.
+- What are "color" and "flush" for? Line 19-20.
+- In the drawTile function you have done some math operations that I don't undertand. Why the numbers 2, 0.5 and 1/4?. Line 25-29.
+- In the function "imageUv" I don't understand how works the dimensions of the images. I mean, the values (1/4, 2/4, 3/4, 0/4). Line 45-49.
+- For the state "DigitUV n" I don't understand how it take the respective digit of the image to show. Line 50-52.
+- I have two warnings: first in the line 30 to 42, second in the line 45 to 53. The image below shows the warnings.
